@@ -7,14 +7,13 @@
 （3）最后把你的项目提交或者更新到Github上时，Github会自动解析这个语法，并把图片在README.me中显示出来。
 
 
-![Alt text](https://github.com/lgjabc/Openstack_lgj/blob/master/Openstack/images/11.png)
-![Alt text](https://github.com/lgjabc/Openstack_lgj/raw/master/Screenshots/2.png)
+![Alt text](https://github.com/lgjabc/Openstack_lgj/raw/master/images/1.png)
 
-![Alt text](https://github.com/lgjabc/Openstack_lgj/blob/master/images/2.png)
+![Alt text](https://github.com/lgjabc/Openstack_lgj/raw/master/images/2.png)
 
-![Alt text](https://github.com/lgjabc/Openstack_lgj/blob/master/Openstack/images/3.png)
+![Alt text](https://github.com/lgjabc/Openstack_lgj/raw/master/images/3.png)
 
-![Alt text](https://github.com/lgjabc/Openstack_lgj/blob/master/Openstack/images/4.png)
+![Alt text](https://github.com/lgjabc/Openstack_lgj/raw/master/images/4.jpg)
 
 我来简单解释一下这个语法：
 [Alt text]这里面的文字其实是可选的，如果该图片不能正常显示，那么就会显示[]这里面的文本。
