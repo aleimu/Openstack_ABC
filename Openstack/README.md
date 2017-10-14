@@ -7,7 +7,7 @@
 （3）最后把你的项目提交或者更新到Github上时，Github会自动解析这个语法，并把图片在README.me中显示出来。
 
 
-![Alt text](https://github.com/lgjabc/Openstack_lgj/blob/master/Openstack/images/1.png)
+![Alt text](https://github.com/lgjabc/Openstack_lgj/blob/master/Openstack/images/11.png)
 
 ![Alt text](https://github.com/lgjabc/Openstack_lgj/blob/master/Openstack/images/2.png)
 
