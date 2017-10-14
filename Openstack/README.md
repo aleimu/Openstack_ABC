@@ -2,7 +2,7 @@
 （1）首先在你的本地项目目录下新建一个 images 文件夹，用于来存放需要显示的图片，我放入1.png一张图片；
 （2）在本地编辑README.md文件，来引用这张图片，引用图片的语法如下：
 
-![Alt text](https://github.com/lgjabc/Openstack_lgj/tree/master/Openstack/images/1.png)
+![Alt text](https://github.com/lgjabc/Openstack_lgj/blob/master/Openstack/images/1.png)
 
 我来简单解释一下这个语法：
 [Alt text]这里面的文字其实是可选的，如果该图片不能正常显示，那么就会显示[]这里面的文本。
