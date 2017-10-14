@@ -8,6 +8,7 @@
 
 
 ![Alt text](https://github.com/lgjabc/Openstack_lgj/blob/master/Openstack/images/11.png)
+![Alt text](https://github.com/lgjabc/Openstack_lgj/raw/master/Screenshots/2.png)
 
 ![Alt text](https://github.com/lgjabc/Openstack_lgj/blob/master/Openstack/images/2.png)
 
