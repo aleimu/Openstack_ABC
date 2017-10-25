@@ -129,7 +129,7 @@ stdout标准输出，在输出内容比较少时，可以通过直接使用read�
 }
 
 dome2{
-#不仅要实现单纯的执行命令，还要在执行命令之后，上传一个文件，上传文件之后依然能执行命令。
+#不仅要实现单纯的执行命令，还要在执行命令之后，上传一个文件，上传文件之后依然能执行命令。--->这样能ssh登陆数据库手动操作数据库吗？
 # 自己封装一个类似SSHClient的类
 import paramiko
  
@@ -218,6 +218,73 @@ if __name__=='__main__':
   
 }
 
+dome5{
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect('127.0.0.1',username='root',password='passw0rd')
+
+output=""
+err_str=""
+
+#cli_channel=ssh.get_transport().open_channel('session')
+#cli_channel.settimeout(3600)
+#cli_channel.get_pty()
+#cli_channel.invoke_shell()
+
+stdin, stdout, stderr = ssh.exec_command("/usr/bin/cp /root/names.txt /tmp/names.txt.before",get_pty=True)
+#stdin, stdout, stderr=ssh.exec_command("/usr/bin/cp /root/names.txt /tmp/names.txt.before; echo good bye; sleep 1; ls -al /dev; grep -Ev '^[[:space:]]*#' /usr/local/src/py/network/paramiko_2.py",get_pty=True)
+
+output=stdout.channel.recv(8192).decode()
+try:
+    while not stdout.channel.exit_status_ready():
+        rl, wl, xl = select.select([stdout.channel], [], [], 0.0)
+        if len(rl) > 0:
+            output+=stdout.channel.recv(8192).decode()
+except socket.timeout:
+    print("Operation time out. Ouput might not be complete.")
+
+rc=stdout.channel.recv_exit_status()
+print(rc)
+print(output)
+print(err_str)
+
+print ("Command done, closing SSH connection")
+ssh.close()
+}
+
+dome6{
+ssh = paramiko.SSHClient()
+
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect('127.0.0.1',username='root',password='passw0rd')
+output=""
+err_str=""
+
+cli_channel=ssh.get_transport().open_channel('session')
+cli_channel.settimeout(600)
+
+
+try:
+    out=cli_channel.recv(512)
+    while len(out) > 0:
+        output+=out.decode()
+        out=cli_channel.recv(512)
+
+    out=cli_channel.recv_stderr(512)
+    while len(out) > 0:
+        err_str+=out.decode()
+        out=cli_channel.recv_stderr(512)
+
+except socket.timeout:
+        print("Operation time out. Ouput might not be complete.")
+rc=cli_channel.recv_exit_status()
+print(rc)
+print(output)
+print(err_str)
+
+print ("Command done, closing SSH connection")
+ssh.close()
+}
 
 疑问{
 1 ssh.connect是否会保持状态，以后得每一次ssh.exec_command都能继承上一次的环境？
@@ -226,6 +293,18 @@ if __name__=='__main__':
 	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 	ssh.connect("10.10.1.1",22,"root","1111")
 	stdin, stdout, stderr = ssh.exec_command("mysql -uroot -p123456 -Dmysql -e 'select user from user'")
+#答
+exec_command为单个会话，执行完成之后会回到登录时的缺省目录。
+比如执行下面两句。
+stdin, stdout, stderr = ssh.exec_command("cd  /root/paramiko;mkdir %s" %name)
+stdin,stdout,stderr = ssh.exec_command('mkdir haha') #haha目录最终是在缺省的/root目录下新建的，而不是/root/paramiko目录。
 
-2  
+2 sudo的用法
+
+stdin, stdout, stderr = s.exec_command(‘sudo -S %s’ % cmd)
+stdin.write(‘%s’ % password)
+stdin.flush()
+out = stdout.readlines()
+
+3 paramiko.channel.Channel 是否能完成 1 的需求？
 }
