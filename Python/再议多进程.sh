@@ -1,5 +1,5 @@
 #参考博文
-http://www.cnblogs.com/huanxiyun/articles/5826902.html
+http://www.cnblogs.com/kaituorensheng/p/4465768.html
 http://www.cnblogs.com/huanxiyun/articles/5826902.html
 
 对于计算密集型程序，多进程并发优于多线程并发。计算密集型程序指的程序的运行时间大部分消耗在CPU的运算处理过程，而硬盘和内存的读写消耗的时间很短；
