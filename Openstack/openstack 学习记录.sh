@@ -115,6 +115,34 @@ tests: 单元测试和功能测试代码。
 其中nova-compute服务的入口函数为nova/cmd/compute.py(. -> /)模块的main函数
 
 import pdb; pdb.set_trace() # 设置断点
+	c or continue 继续执行程序
+	q or quit
+	l or list, 显示当前步帧的源码
+	w or where,回溯调用过程
+	d or down, 后退一步帧（注：相当于回滚）
+	u or up, 前进一步帧
+	(回车), 重复上一条指令
+	
+	break 或 b 设置断点
+	设置断点(b 77：在77行设置断点；b：查看断点；cl 2：删除第二个断点)
+
+	step 或 s
+	进入函数
+
+	return 或 r
+	执行代码直到从当前函数返回
+
+	exit 或 q
+	中止并退出
+
+	next 或 n
+	执行下一行
+
+	p
+	打印变量的值
+
+	help
+	帮助
 
 }
 
@@ -443,10 +471,70 @@ cat /sys/class/fc_host/host10/port_name
 
 }
 
+Python code 提取UML
+{
+#Python code 提取UML
+http://www.cnblogs.com/linyihai/p/7466235.html
+pyreverse 与Graphviz 的使用
+
+pyreverse能方便的生成uml类图，pylint里整合了pyreverse这个工具。使用pip安装pylint
+pip install pylint
+}
 
 
+饱谙世事慵开口，会尽人间只点头.
+莫道老来无伎俩，更嫌何处不风流.
+
+多进程的坑---变量共享
+#http://www.cnblogs.com/congbo/archive/2012/08/24/2652322.html #参考此博客
+{
+
+==========================================================
+********** {u'hamode': u'active-active', u'pkgname': u'cps-heat-1.0.1-60', u'name': u'heat', u'service': u'heat', u'description': u'The Orchestration service provides a template-based orchestration for describing a cloud application by running OpenStack API calls to generate running cloud applications.'}
+Exception in thread Thread-14:
+Traceback (most recent call last):
+  File "/usr/lib64/python2.7/threading.py", line 811, in __bootstrap_inner
+    self.run()
+  File "/usr/lib64/python2.7/threading.py", line 764, in run
+    self.__target(*self.__args, **self.__kwargs)
+  File "/usr/lib64/python2.7/multiprocessing/pool.py", line 342, in _handle_tasks
+    put(task)
+PicklingError: Can't pickle <type 'function'>: attribute lookup __builtin__.function failed
 
 
+    def _check_other_comps_ssl(self, new_ssl):
+        templates = self.comp_util.get_have_cfg_templates("rabbit_use_ssl")
+        import multiprocessing
+        import time
+
+        def task(i):
+            # print('new we send:',i)
+            self._wait_use_ssl_changed(i["service"],
+                                       i["name"],
+                                       new_ssl)
+            self.comp_util.wait_instances_normal(i["service"],
+                                                 i["name"],
+                                                 new_ssl)
+
+        pool = multiprocessing.Pool(processes=4)
+        for i in templates:
+            pool.apply_async(task, (i, ))
+        pool.close()
+        pool.join()
+
+        
+
+        
+Exception in thread Thread-14:
+Traceback (most recent call last):
+  File "/usr/lib64/python2.7/threading.py", line 811, in __bootstrap_inner
+    self.run()
+  File "/usr/lib64/python2.7/threading.py", line 764, in run
+    self.__target(*self.__args, **self.__kwargs)
+  File "/usr/lib64/python2.7/multiprocessing/pool.py", line 342, in _handle_tasks
+    put(task)
+PicklingError: Can't pickle <type 'function'>: attribute lookup __builtin__.function failed
+}
 
 
 
