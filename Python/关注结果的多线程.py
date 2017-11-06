@@ -1,4 +1,7 @@
 from multiprocessing.dummy import Pool as ThreadPool
+from multiprocessing.pool import ThreadPool
+#这两个ThreadPool好像区别不大，方法基本一样
+
 import time
 class duojincheng():
     def task_1(self,x):
