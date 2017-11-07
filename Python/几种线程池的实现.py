@@ -10,6 +10,11 @@ http://www.cnblogs.com/phennry/articles/5698038.html
 #参考多种线程池的实现
 https://github.com/search?l=Python&q=threadpool&type=Repositories&utf8=%E2%9C%93
 
+#不建议自己造轮子，可以使用自带的线程池
+from multiprocessing.pool import Pool as ThreadPool
+from multiprocessing.dummy import Pool as ThreadPool
+    
+    
 #几种线程池实现
 
 简单线程池 线程不复用
