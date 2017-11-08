@@ -58,8 +58,10 @@ def dome1():
         # 怀疑会在 x==9 处报异常，因为sleep时间最短且可能在同一线程池中被处理，然而实际情况是在x==8处报异常
         # 在 if 后面最小的x 处中断 error is ('timeout error1 ', 8)，而与sleep时间无关
         result1.append(result)
-    pool.close()
-    pool.join()
+
+    # 下面两句会影响总时间，只有wait时为10s，加上join时20s，可以看出join会运行所有的子线程
+    # pool.close()
+    # pool.join()
 
     # print('=====if====1') #这种方式能检测出子线程的超时异常
     # try:
@@ -113,6 +115,7 @@ def dome2():
         # 怀疑会在 x==9 处报异常，因为sleep时间最短且可能在同一线程池中被处理
         # 在 if 后面时间最短处中断 error is ('timeout error2 ', 9)，而与sleep时间有关
         # map和map_async 不按 x 的进入顺序处理
+        #下面两句加不加好像不影响，wait已经等待了
         pool.close()
         pool.join()
         result.wait()  # 等待所有线程函数执行完毕
@@ -122,20 +125,20 @@ def dome2():
         print("successful %s" % result.successful())
         print("i.get %s" % result.get())
 
-        # print('=====if====1')
-        # if result.ready():  # 线程函数是否已经启动了
-        #     if result.successful():  # 线程函数是否执行成功
-        #         result2.append(result.get())
-        #         # 以下函数在全部线程都执行成功时可以重复执行,返回值相同，但异常时只能执行一次successful/get
-        #         print("ready %s" % result.ready())
-        #         print("successful %s" % result.successful())
-        #         print("i.get %s" % result.get())
-        #         print("ready %s" % result.ready())
-        #         print("successful %s" % result.successful())
-        #         print("i.get %s" % result.get())
-        #         # error is ('timeout error2 ', 9)
-        #         # result2 and len:  ([], 0)
-        # print('=====if====1')
+        print('=====if====1')
+        if result.ready():  # 线程函数是否已经启动了
+            if result.successful():  # 线程函数是否执行成功
+                result2.append(result.get())
+                # 以下函数在全部线程都执行成功时可以重复执行,返回值相同，但异常时只能执行一次successful/get
+                print("ready %s" % result.ready())
+                print("successful %s" % result.successful())
+                print("i.get %s" % result.get())
+                print("ready %s" % result.ready())
+                print("successful %s" % result.successful())
+                print("i.get %s" % result.get())
+                # error is ('timeout error2 ', 9)
+                # result2 and len:  ([], 0)
+        print('=====if====1')
 
         # print('=====while====2')
         # while result.ready():
@@ -201,3 +204,8 @@ def dome4():
 
 if __name__ == "__main__":
     dome2()
+#总结:
+# 1. 不建议使用while，因为和if基本一样的功能，主线程会等待子线程，不需要轮询
+# 2. apply_async中加上join会增加异常发生时总的时间(会把全部的线程都运行了，异常发生时会中断异常线程，其他线程不影响，但get的结果只收集异常发生前的线程返回)。
+#    异常会发生在最快进入sleep的线程中，get返回结果是x最先进入sleep触发异常前的线程(x=8,sleep(10))的结果，总消耗时间在不加join情况下也以此x为准，但当加join后总消耗时间会以最长sleep的为参考，也就是说会运行所有的线程，但get的结果还是第一个异常触发前的x<8的其他线程的结果
+# 3. map_async中加不加join一样。map总是把全部线程都执行，异常会发生在sleep最短(x=9,sleep(1))的线程中，返回结果时以sleep最短的异常为准，但总消耗时间以sleep最长的为准，发生异常就get不到结果
