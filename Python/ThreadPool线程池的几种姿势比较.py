@@ -47,6 +47,25 @@ def task(x):
         return 1
         #raise Exception('test1 or test2 is timeout!')
 
+
+
+#apply_async---error
+def dome0():
+    time1 = time.time()
+    result1 = []
+    pool = ThreadPool(20)
+    for i in range(50):
+        result = pool.apply_async(func=task, args=(i,))
+        result1.append(result)
+
+    pool.close()
+    pool.join()
+    time2 = time.time()
+    print("time:", time2 - time1)
+    # 结果分析
+    #无法接收子线程的异常，主线程中不会报错，这样的实现是不合理的
+
+
 #apply_async
 def dome1():
     time1 = time.time()
@@ -202,10 +221,39 @@ def dome4():
     #time: 11.943454027175903
     #一步一步执行，并没有并发，基本和单线程一样，异常发生后就不再往下执行
 
+#map_async---上面的map_async其实不需要if判断的
+def dome5():
+    result2 = []
+    time1 = time.time()
+    pool = ThreadPool(20)
+    my_iter = range(50)
+    try:
+        result = pool.map_async(task, my_iter)
+        # 怀疑会在 x==9 处报异常，因为sleep时间最短且可能在同一线程池中被处理
+        # 在 if 后面时间最短处中断 error is ('timeout error2 ', 9)，而与sleep时间有关
+        # map和map_async 不按 x 的进入顺序处理
+        #下面两句加不加好像不影响，wait已经等待了
+        pool.close()
+        pool.join()
+        result.wait()  # 等待所有线程函数执行完毕
+        #放在这里打印可以触发异常，不然就算子线程异常了，主线程也不会知道
+        print("ready %s" % result.ready())
+        print("successful %s" % result.successful())
+        print("i.get %s" % result.get())
+    except Exception as e:
+        print("error is %s" % str(e))
+    print("result2 and len: ", (result2, len(result2)))
+    time2 = time.time()
+    print("time:", time2 - time1)
+    # 结果分析
+    #对比dome2，这里的更简洁一些，不需要多余的if判断，子线程有异常直接接收就好
+
 if __name__ == "__main__":
-    dome2()
+    dome0()
 #总结:
 # 1. 不建议使用while，因为和if基本一样的功能，主线程会等待子线程，不需要轮询
 # 2. apply_async中加上join会增加异常发生时总的时间(会把全部的线程都运行了，异常发生时会中断异常线程，其他线程不影响，但get的结果只收集异常发生前的线程返回)。
 #    异常会发生在最快进入sleep的线程中，get返回结果是x最先进入sleep触发异常前的线程(x=8,sleep(10))的结果，总消耗时间在不加join情况下也以此x为准，但当加join后总消耗时间会以最长sleep的为参考，也就是说会运行所有的线程，但get的结果还是第一个异常触发前的x<8的其他线程的结果
 # 3. map_async中加不加join一样。map总是把全部线程都执行，异常会发生在sleep最短(x=9,sleep(1))的线程中，返回结果时以sleep最短的异常为准，但总消耗时间以sleep最长的为准，发生异常就get不到结果
+# 4. 无论是map还是apply，若只是多线程发送请求不关注结果，可以不用加result.wait()、result.successful(
+    # )、result.get()，如果要关注就必须加上，这样才能接收子线程的异常，这就是异步。
