@@ -1,13 +1,11 @@
-# concurrent.futures模块提供给开发者一个执行异步调用的高级接口.concurrent.futures 基本上就是在Python的 threading 和 multiprocessing 模块之上构建的抽象层,更易于使用.尽管这个抽象层简化了这些模块的使用,但是也降低了很多灵活性,所以如果你需要处理一些定制化的任务,concurrent.futures或许并不适合你.
+# concurrent.futures模块提供给开发者一个执行异步调用的高级接口.concurrent.futures 基本上就是在Python的 threading 和 multiprocessing 模块之上构建的抽象层,更易于使用.尽管这个抽象层简化了这些模块的使用,但是也降低了很多灵活性,所以如果你需要处理一些定制化的任务,concurrent.futures或许并不适合你.但对于一般任务我们可以将相应的tasks直接放入线程池/进程池，不需要维护Queue来操心死锁的问题，线程池/进程池会自动帮我们调度。
 
 concurrent.futures包括抽象类 Executor,它并不能直接被使用,所以你需要使用它的两个子类：ThreadPoolExecutor 或者 ProcessPoolExecutor.正如你所猜的,这两个子类分别对应着Python的threading和multiprocessing接口.这两个子类都提供了池,你可以将线程或者进程放入其中.
-
 
 Python标准库中所有执行阻塞型I/O操作的函数,在等待系统返回结果时都会释放GIL(time.sleep()函数也会释放GIL).这意味着I/O密集型Python程序能从中受益：一个Python线程等待网络响应时,阻塞型I/O函数会释放GIL,再运行一个线程.
 
 从Python3.4起,标准库中有两个为Future的类：concurrent.futures.Future 和 asyncio.Future.这两个类作用相同：两个Future类的实例都表示可能已经完成或未完成的延迟计算.
 Future 封装待完成的操作,可放入队列,完成的状态可以查询,得到结果（或抛出异常）后可以获取结果（或异常）.
-
 
 
 #那么如何使用 concurrent.futures 模块解决不同场景的性能问题呢？
@@ -58,19 +56,3 @@ ProcessPoolExecutor使用multiprocessing模块，不受GIL锁的约束，意味�
 提交任务方式一：submit(fn, *args, **kwargs)：调度函数fn(*args **kwargs)返回一个Future对象代表调用的执行。
 提交任务方式二：map(func, *iterables, timeout=None, chunksize=1)：和map(func, *iterables)相似。但是该map方法的执行是异步的。多个func的调用可以同时执行。当Executor对象是 ProcessPoolExecutor,才可以使用chunksize,将iterable对象切成块,将其作为分开的任务提交给pool,默认为1。对于很大的iterables,设置较大chunksize可以提高性能（切记）。
 shutdown(wait=True)：给executor发信号,使其释放资源,当futures完成执行时。已经shutdown再调用submit()或map()会抛出RuntimeError。使用with语句,就可以避免必须调用本函数
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
