@@ -1,3 +1,22 @@
+#解决：NameError: name 'reload' is not defined 问题
+对于 Python 2.X：
+import sys
+reload(sys)
+sys.setdefaultencoding("utf-8")
+
+对于 <= Python 3.3：
+import imp
+imp.reload(sys)
+注意： 
+1. Python 3 与 Python 2 有很大的区别，其中Python 3 系统默认使用的就是utf-8编码。 
+2. 所以，对于使用的是Python 3 的情况，就不需要sys.setdefaultencoding("utf-8")这段代码。 
+3. 最重要的是，Python 3 的 sys 库里面已经没有 setdefaultencoding() 函数了。
+
+对于 >= Python 3.4：
+import importlib
+importlib.reload(sys)
+
+
 #mymode.py
 
 import os
