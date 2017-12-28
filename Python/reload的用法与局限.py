@@ -44,7 +44,7 @@ reload
 import os
 reload(os)
 说明：
-reload会重新加载已加载的模块，但原来已经使用的实例还是会使用旧的模块，而新生产的实例会使用新的模块；reload后还是用原来的内存地址；不能支持from。。import。。格式的模块进行重新加载。
+reload会重新加载已加载的模块，但原来已经使用的实例还是会使用旧的模块，而新生产的实例会使用新的模块；reload后还是用原来的内存地址；不能支持from XX import XX 格式的模块进行重新加载。
 
 
 import A.tank与from A import tank的区别：
@@ -57,3 +57,16 @@ sys.modules['A.tank']
 import A.tank 在local名称空间中引入符合"A"，并且将其映射到module A
 from A import tank Python虚拟机在local名称空间中引入符合"tank"，并将其映射到module A.tank
 """
+
+Python 动态加载模块的3种方法
+1，使用系统函数__import_()
+
+stringmodule = __import__('string')
+2,使用imp 模块
+
+import imp
+stringmodule = imp.load_module('string',*imp.find_module('string'))
+3,使用exec
+
+import_string = "import string as stringmodule"
+exec import_string
