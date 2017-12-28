@@ -70,3 +70,20 @@ stringmodule = imp.load_module('string',*imp.find_module('string'))
 
 import_string = "import string as stringmodule"
 exec import_string
+
+#导入模块的所有方法：
+import module_name #表示将模块中的所有代码加载到这个位置并赋值给变量module_name，并执行模块
+import libs.module_name #表示从libs目录下导入模块文件module_name，调用方法：libs.module_name.func()
+import module1_name,module2_name #同时导入多个模块
+from module_name import login,logout #相当于将module_name\login中的代码拿到当前位置执行
+from module_name import login as module_name_login #对导入模块中的方法取别名
+from libs.module_name import func #从目录下的模块文件中导入方法func，调用：func()
+
+import本质：
+　　导入模块的本质就是把Python文件解释一遍。
+　　导入包的本质就是执行该包下的__init__.py文件。
+
+导入优化：
+　　from module_name import login
+　　相比较import module_name，调用时module_name.test()，每次调用时都需要在os.path路径中检索导致效率降低，所以使用from...import...导入，
+    这样相当于将方法直接拿到调用者中执行。
