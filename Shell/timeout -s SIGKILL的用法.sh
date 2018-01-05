@@ -1,0 +1,28 @@
+[root@allinone-centos ~]# kill -l
+ 1) SIGHUP	 2) SIGINT	 3) SIGQUIT	 4) SIGILL	 5) SIGTRAP
+ 6) SIGABRT	 7) SIGBUS	 8) SIGFPE	 9) SIGKILL	10) SIGUSR1
+11) SIGSEGV	12) SIGUSR2	13) SIGPIPE	14) SIGALRM	15) SIGTERM
+16) SIGSTKFLT	17) SIGCHLD	18) SIGCONT	19) SIGSTOP	20) SIGTSTP
+21) SIGTTIN	22) SIGTTOU	23) SIGURG	24) SIGXCPU	25) SIGXFSZ
+26) SIGVTALRM	27) SIGPROF	28) SIGWINCH	29) SIGIO	30) SIGPWR
+31) SIGSYS	34) SIGRTMIN	35) SIGRTMIN+1	36) SIGRTMIN+2	37) SIGRTMIN+3
+38) SIGRTMIN+4	39) SIGRTMIN+5	40) SIGRTMIN+6	41) SIGRTMIN+7	42) SIGRTMIN+8
+43) SIGRTMIN+9	44) SIGRTMIN+10	45) SIGRTMIN+11	46) SIGRTMIN+12	47) SIGRTMIN+13
+48) SIGRTMIN+14	49) SIGRTMIN+15	50) SIGRTMAX-14	51) SIGRTMAX-13	52) SIGRTMAX-12
+53) SIGRTMAX-11	54) SIGRTMAX-10	55) SIGRTMAX-9	56) SIGRTMAX-8	57) SIGRTMAX-7
+58) SIGRTMAX-6	59) SIGRTMAX-5	60) SIGRTMAX-4	61) SIGRTMAX-3	62) SIGRTMAX-2
+63) SIGRTMAX-1	64) SIGRTMAX	
+#有两种方法可以从超时实用程序向进程发送SIGKILL信号.一种是SIGTERM信号SIGKILL，另一种是SIGTERM信号的序号
+timeout -s SIGKILL 1m slow-command arg1 arg2;
+timeout -k 9 1m slow-command arg1 arg2;
+该过程在60秒后发送一个SIGTERM信号。如果它仍在运行，那么SIGKILL信号会在30秒后发送。
+
+如果timeout超时工具不可用，则可以使用下面的1-liner作为替代。
+
+slow-command arg1 arg2＆sleep 60;kill $!;
+慢速命令作为后台进程启动。休眠命令将暂停，直到超时持续时间。在我们的情况下，它会睡60秒。一旦60秒过去，kill命令将发送一个SIGTERM信号给慢速命令进程。 '$！'shell变量将给出最后一个后台作业的PID。
+#例子
+timeout -s SIGKILL 1 bash -c 'sleep 5';
+timeout -k 9 1 bash -c 'sleep 5';
+timeout -s SIGKILL 1 sleep 5;
+sleep 5 & sleep 10;kill $!;ps -ef|grep sleep;
