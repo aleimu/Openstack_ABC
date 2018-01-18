@@ -10,13 +10,14 @@ AMQP 即Advanced Message Queuing Protocol，高级消息队列协议
 #nova-api 配置文件
 E:\New_openstack\git工程\nova-master\etc\nova\api-paste.ini
 
-#并发与异步
+#并发与异步 eventlet库
+{
 https://github.com/eventlet/eventlet  #Eventlet是Python的并发网络库
 http://www.cnblogs.com/yasmi/articles/4953910.html
 
 eventlet是对greenlet的封装
 greenlet需要程序员显式的写代码在不同的协程之间切换
-{
+
 from greenlet import greenlet
 
 def test1():
@@ -91,14 +92,113 @@ abc
 }
 
 }
-paste
+
+# paste库
 {
 谈到WSGI，就免不了要了解paste，其中paste deploy是用来发现和配置WSGI应用的一套系统，对于WSGI应用的使用者而言，可以方便地从配置文件汇总加载WSGI应用（loadapp）；对于WSGI应用的开发人员而言，只需要给自己的应用提供一套简单的入口点即可。
 
+http://blog.csdn.net/u011521019/article/details/50891330
 http://www.cnblogs.com/Security-Darren/p/4087587.html
+http://www.cnblogs.com/zmlctt/p/4208919.html
+http://www.cnblogs.com/jmilkfan-fanguiju/p/7532332.html
+http://blog.csdn.net/li_101357/article/details/52755367
+
+paste的配置文件中有下面几项是比较常见的：
+filter:
+如：
+[filter:s3_extension]
+paste.filter_factory = keystone.contrib.s3:S3Extension.factory
+ 
+app:
+如：
+[app:service_v3]
+paste.app_factory = keystone.service:v3_app_factory
+ 
+pipeline：
+如：
+[pipeline:public_api]
+pipeline = sizelimit url_normalize build_auth_context token_auth admin_token_auth xml_body json_body ec2_extension user_crud_extension public_service
+ 
+composite：
+如：
+[composite:main]
+use = egg:Paste#urlmap
+/v2.0 = public_api
+/v3 = api_v3
+/ = public_version_api
+
+Request 被 paste.ini 处理的流程
+WSGI Server(Web Server) 接受到 URL_Path 形式的 HTTP Request 时，这些 Request 首先会被 Paste 模块按照配置文件 paste.ini 进行处理。
+
+app(应用程序)：WSGI服务的核心部分，用于实现WSGI服务的主要逻辑
+app是一个callable object，接受的参数(environ,start_response)，这是paste系统交给application的，符合 WSGI规范的参数. app需要完成的任务是响应envrion中的请求，准备好响应头和消息体，然后交给start_response 处理，并返回响应消息体。
+filter(过滤器)：一般用于一些准备性的工作，例如验证用户身份、准备服务器环境等。在一个filter执行完之后，可以直接返回，也可以交给下一个filter或者app继续执行。
+filter是一个callable object，其唯一参数是(app)，这是WSGI的application对象，filter需要完成的工作是将application包装成另一个application（“过滤”），并返回这个包装后的application。
+pipeline(管道)：由若干个filter和1个app组成。通过pipeline，可以很容易定制WSGI服务
+composite(复合体)：用于实现复杂的应用程序，可以进行分支选择。例如：根据不同的URL调用不同的处理程序。
+
+处理的过程为： 
+1. composite(将Request将URL_Path的前缀(/v2.0 /v3 /)和一个Application(app/filter)进行映射。然后将Request转发到pipeline或app中，最终会到达指定的 Application) 
+2. ==> pipeline(包含了filter和app) 
+3. ==> filter(调用Middleware对Request进行过滤) 
+4. ==> app(具体的Application来实现Request的操作)。
+这个过程就是将 Application 和 Middleware 串起来的过程，不一定要按照顺序执行，只要能到达 Application 即可。
+由配置文件可以很容易找到各个组件的代码位置，如neutron.api.v2.router代表 neutron/api/v2/router
+
+# Keystone Request URL 为 http://homename:35357/v3/auth/tokens
+Step1. （hostname:35357）： 这一部分由 Web Server 来获取并处理的(EG.虚拟机功能)。
+Step2. （/v3/auth/tokens）: 根据 paste.ini 中的配置来对剩下的 URL（/v3/auth/tokens）部分进行处理。首先请求的 Post=35357 决定了会经过 [composite:admin] section 。（一般是admin监听35357端口，main监听5000端口；也可以由 application = wsgi_server.initialize_application(name) 中 name 参数来决定）
+Step3. （/v3）: composite section 会根据 /v3 这个 URL 前缀来决定将 Request 路由到哪一个 pipeline secion，这里就把请求转发给 [pipeline:api_v3] 处理，转发之前，会把 /v3 这个部分的 URL 去掉。
+Step4. （/auth/tokens） : [pipeline:api_v3] 收到请求，URL_Path是 （/auth/tokens），然后开始调用各个 filter(中间件) 来处理请求。最后会把请求交给 [app:service_v3] 进行处理。
+Step5. （/auth/tokens）: [app:service_v3] 收到请求，URL_Path是 (/auth/tokens)，最后交由的 WSGI Application:keystone.service:v3_app_factory 去处理。
+注意：剩下的URL后缀 /auth/tokens 则交由另一个模块 Routers 来处理，这个以后再介绍。
+
+
+Paste#urlmap 表示默认使用Paste.urlmap。
+use = egg:Paste#urlmap 意味着直接使用来自于Paste包的urlmap的composite应用。 
+urlmap是特别常见的composite应用；它使用路径前缀来映射将你的请求与其他应用对应起来。基本含义就是说，这是Paste已经提供好的一个composite，如果你想自定义就需要另外写一个composite_factory了。
+
+
+[composite:blog]
+use=egg:Paste # urlmap 表示我们将使用Pasteegg包中urlmap来实现composite，这一个段(urlmap)可以算是一个通用的composite程序了。
+/:portal  # 根据web请求的path的前缀进行一个到应用的映射(map)
+/admin:admin
+
+[pipeline:admin] # 指明一串app的传递链，由一些filter、app组成，最后一个是应用，即将前面的fiiter应用到app。
+pipeline = logrequest adminWeb
+
+# App
+# - app是一个callable object，接受的参数(environ,start_response)，这是paste系统交给application的，符合
+# WSGI规范的参数. app需要完成的任务是响应envrion中的请求，准备好响应头和消息体，然后交给start_response处理，并返回响应消息体。
+[app:portal]
+version = 1.0.0 #参数
+description = This is an blog portal. #参数
+paste.app_factory = pastedeploylab:Portal.factory
+
+[app:adminWeb]
+version = 1.0.0 # 参数
+description = This is an blog admin. #参数
+paste.app_factory = pastedeploylab:AdminWeb.factory
+
+# - app_factory是一个callable object，其接受的参数是一些关于application的配置信息：(global_conf,**kwargs)，
+# global_conf是在ini文件中default section中定义的一系列key-value对，而**kwargs，即一些本地配置，是在ini文件中，
+# app:xxx section中定义的一系列key-value对。app_factory返回值是一个application对象
+
+
+# Filter
+# - filter是一个callable object，其唯一参数是(app)，这是WSGI的application对象，
+# filter需要完成的工作是将application包装成另一个application（“过滤”），并返回这个包装后的application。
+
+[filter:logrequest]
+paste.filter_factory = pastedeploylab:LogFilter.factory
+# - filter_factory是一个callable object，其接受的参数是一系列关于filter的配置信息：(global_conf,**kwargs)，
+# global_conf是在ini文件中default section中定义的一系列key-value对，而**kwargs，即一些本地配置，是在ini文件中，
+# filter:xxx section中定义的一系列key-value对。filter_factory返回一个filter对象
+
+
 }
 
-#目录的作用如下：
+# 目录的作用如下：
 {
 API: 处理跟其他模块的接口
 CA：证书相关内容
@@ -129,7 +229,8 @@ vnc: vnc登陆相关
 volume: 磁盘相关
 wsgi: wsgi接口
 }
-#整理的简要的Nova模块源码结构
+
+# 整理的简要的Nova模块源码结构
 {
 /bin:Nova各个服务的启动脚本
 /nova/api/auth.py:通用身份验证的中间件，访问keystone；
@@ -471,3 +572,5 @@ parse_host_port方法：把address和default_port解析成host和port配对形�
 
 
 
+# six
+是一个Python 2和3的兼容性库,它提供了用于平滑Python版本之间差异的实用函数，其目标是编写在两个Python版本上兼容的Python代码。
