@@ -86,3 +86,50 @@ cf.write(open("test.conf", "w"))
 cf.remove_option('liuqing','int')
 cf.remove_section('liuqing')
 cf.write(open("test.conf", "w"))
+
+
+8. 一个复杂的例子
+#读取配置，有时候是字符串形式的，但不方便处理，可以eval转化成字典来操作，这样就不用管那么多转义字符
+import ConfigParser
+import json
+
+def change_key_cfg(path='server.conf.bak'):
+    LOG.info("change_key_cfg start")
+    with open(path, 'r+') as cfg:
+        parser = ConfigParser.ConfigParser()
+        parser.readfd(cfg)
+        content = parser.get("DEFAULT", "wrap_list")
+        LOG.info("old content:%s " % content)
+        if content:
+            wraps = json.loads(content)["wraps"]
+            LOG.info("old wraps:%s" % wraps)
+            wraps["auth"][0]["wrap"] = \
+                wraps["crypt"][0]["wrap"]
+            LOG.info("new wraps:%s " % wraps)
+            parser.set("DEFAULT", "wrap_list", json.dumps(wraps))
+            content = parser.get("DEFAULT", "wrap_list")
+            LOG.info("new content:%s" % content)
+            parser.write(cfg)
+        else:
+            raise Exception("config %s analyze error!" % path)
+    LOG.info("change_key_cfg end")
+
+# 改变配置文件中的秘钥
+def change_key_cfg(path):
+    LOG.info("change_key_cfg start")
+    with open(path, 'r+') as cfg:
+        parser = ConfigParser.ConfigParser()
+        parser.readfp(cfg)
+        wrap_list_str = parser.get("DEFAULT", "wrap_list")
+        LOG.info("old wrap_list:%s " % wrap_list_str)
+        wrap_list_dict = eval(wrap_list_str)
+        if wrap_list_dict:
+            wrap_list_dict["wraps"]["auth"][0]["wrap"] = \
+                wrap_list_dict["wraps"]["crypt"][0]["wrap"]
+            parser.set("DEFAULT", "wrap_list", json.dumps(wrap_list_dict))
+            parser.write(open(path, "w"))
+            wrap_list_str = parser.get("DEFAULT", "wrap_list")
+            LOG.info("new wrap_list:%s" % wrap_list_str)
+        else:
+            raise Exception("config %s analyze error!" % path)
+    LOG.info("change_key_cfg end")
