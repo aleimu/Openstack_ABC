@@ -570,7 +570,51 @@ parse_host_port方法：把address和default_port解析成host和port配对形�
 /nova/wsgi.py:WSGI服务工作的通用方法；
 }
 
-
-
 # six
 是一个Python 2和3的兼容性库,它提供了用于平滑Python版本之间差异的实用函数，其目标是编写在两个Python版本上兼容的Python代码。
+
+#创建虚拟机的函数调用关系
+{
+[nova-api]
+nova/api/openstack/compute/servers.py: create （创建虚拟机）
+    nova/compute/api.py: create
+        nova/compute/api.py: _create_instance
+            nova/compute/api.py: _validate_and_build_base_options （验证基本输入参数，并拷贝flavor信息）
+            nova/compute/api.py: _check_and_transform_bdm （检查块设备）
+            nova/compute/api.py: _provision_instances （查看配额quota是否满足）
+            nova/compute/api.py: _build_filter_properties （获取主机过滤条件）
+            nova/compute/api.py: _record_action_start （更新数据库，记录创建开始信息）
+            nova/conductor/api.py: build_instances （使用rpc调用 nova-conductor的manager的同名函数）
+                nova/conductor/rpcapi.py: build_instances
+                    [nova-conductor]
+                    nova/conductor/manager.py: build_instances
+                    scheduler_utils.build_request_spec
+                    self.scheduler_client.select_destinations 
+                       scheduler_rpcapi.select_destinations
+                        [nova-scheduler]
+                        nova/scheduler/filter_scheduler.py: select_destinations（调用过滤器，选择满足条件的主机）
+                           nova/scheduler/filter_scheduler.py:_schedule
+                              nova/scheduler/host_manager.py:get_all_host_states
+                              nova/scheduler/host_manager.py:get_filtered_hosts
+                             nova/filters.py: get_filtered_objects 
+                                            （这里的filter_classes就是系统配置的过滤器集）
+                    [nova-conductor]
+                    self.compute_rpcapi.build_and_run_instance
+                        [nova-compute]
+                        build_and_run_instance
+                            utils.spawn_n  _do_build_and_run_instance （创建一个绿色线程）
+                                self._decode_files(injected_files)   (处理注入文件的编码)
+                                _build_and_run_instance  （状态从building变为active）
+                                    _build_resources
+                                        _build_networks_for_instance （创建网络）
+                                        _prep_block_device  （创建存储）
+                                    self.driver.spawn  （调用virt层创建虚拟机）
+                                    [libvirt]
+                                    nova/virt/libvirt/driver.py:spawn （真正创建虚拟机）
+                                        nova/virt/libvirt/driver.py:_create_image
+                                        nova/virt/libvirt/driver.py: _get_guest_xml （nova和libvirt的接口就是xml）
+                                        nova/virt/libvirt/driver.py:_create_domain_and_network
+                                           nova/virt/libvirt/driver.py: _create_domain
+                                        nova/virt/libvirt/driver.py:_wait_for_boot （等待libvirt创建虚拟机结束）
+
+}
