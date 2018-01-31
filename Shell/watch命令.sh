@@ -27,7 +27,7 @@ watch -n 1 -d 'pstree|grep http'
 命令：
 watch 'netstat -an | grep:21 | \ grep<模拟攻击客户机的IP>| wc -l' 
 说明：
-实例4：监测当前目录中 scf' 的文件的变化
+实例4：监测当前目录中 scf 的文件的变化
 命令：
 watch -d 'ls -l|grep scf' 
 实例5：10秒一次输出系统的平均负载
