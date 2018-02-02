@@ -333,9 +333,32 @@ def shell_sort(li):
 2.在修改后的运行次数函数中，只保留最高阶项。
 3.如果最高阶项存在且不是1，则去除与这个项相乘的常数。
 得到的结果就是大O阶。
-http://www.cnblogs.com/cj723/archive/2011/03/05/1971640.html
+http://www.cnblogs.com/cj723/archive/2011/03/05/1971640.html #很不错
 http://www.cnblogs.com/gaochundong/p/complexity_of_algorithms.html
 http://www.cnblogs.com/songQQ/archive/2009/10/20/1587122.html
+
+复杂度	标记符号	描述
+常量（Constant）	O(1) 操作的数量为常数，与输入的数据的规模无关。n = 1,000,000 -> 1-2 operations 
+对数（Logarithmic）	O(log2 n) 操作的数量与输入数据的规模 n 的比例是 log2 (n)。n = 1,000,000 -> 30 operations
+线性（Linear）	 O(n)	操作的数量与输入数据的规模 n 成正比。n = 10,000 -> 5000 operations
+平方（Quadratic）	 O(n2)	操作的数量与输入数据的规模 n 的比例为二次平方。n = 500 -> 250,000 operations
+立方（Cubic）	 O(n3)	操作的数量与输入数据的规模 n 的比例为三次方。n = 200 -> 8,000,000 operations
+指数（Exponential）	O(2n) O(kn) O(n!)指数级的操作，快速的增长。n = 20 -> 1048576 operations
+
+常用对数 log10 N 简写做 lg N
+自然对数 loge N 简写做 ln N
+在算法导论中，采用记号 lg n = log2 n ，也就是以 2 为底的对数。
+
+#对数阶
+int count = 1;
+while (count < n)
+{
+   count = count * 2;
+   /*时间复杂度为O(1)的程序步骤序列*/
+}
+#由于每次count乘以2之后，就距离n更近了一分。也就是说，有多少个2相乘后大于n，则会退出循环。由2x=n得到x=log2n。所以这个循环的时间复杂度为O(logn)。
+
+
 
 }
 
