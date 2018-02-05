@@ -49,3 +49,39 @@ tcp的keepalive就是为了检测链接的可用性。主要调节的参数有�
 tcp_keepalive_time // 距离上次传送数据多少时间未收到判断为开始检测
 tcp_keepalive_intvl // 检测开始每多少时间发送心跳包
 tcp_keepalive_probes // 发送几次心跳包对方未响应则close连接
+
+
+#python 进程调用查看
+hostname:~ # pidstat -p 4213 -t 1
+Linux 3.10.0-514.35.4.1_47.x86_64 (0EAD26BC-AA18-7143-853A-8E0EA58B3DAB) 	02/05/2018 	_x86_64_	(16 CPU)
+
+05:26:31 PM   UID      TGID       TID    %usr %system  %guest    %CPU   CPU  Command
+05:26:32 PM  1000      4213         -    0.00    0.00    0.00    0.00    13  python2.7
+05:26:32 PM  1000         -      4213    0.00    0.00    0.00    0.00    13  |__python2.7
+05:26:32 PM  1000         -      4332    0.00    0.00    0.00    0.00     2  |__python2.7
+05:26:32 PM  1000         -      1852    0.00    0.00    0.00    0.00     8  |__python2.7
+
+
+hostname:~ # pstree -p 4213
+python2.7(4213)─┬─{python2.7}(4332)
+                └─{python2.7}(1852)
+                
+#命令   作用
+iostat  磁盘IO监控
+vmstat  虚拟内存监控
+prstat  进程监控
+mpstat  CPU监控
+netstat 网络状态监控
+sar     全面监控
+pidstat 监控进程与资源
+pstree  进程监控
+
+因为HTTPS是加密连接，无法被审计。此时公司Proxy代理会进行HTTPS中间人攻击（Man-in-the-middle-attack），将对方的证书替换成公司IT签发的证书，以确保所有流量可以被解密审计。我们平时试用的Windows都已经预置了公司的“根证书”，所以不会遇到上面的错误。但是Linux机器都是自己装的系统，没有公司“根证书”，这导致了诸多不便。
+
+yum install ca-certificates
+update-ca-trust force-enable
+cp hw.ca /etc/pki/ca-trust/source/anchors/
+update-ca-trust extract
+export http_proxy=http://aa:bb%40123456@proxy.XXXX.com:8080/
+export https_proxy=http://aa:bb%40123456@proxy.XXXX.com:8080/
+curl -I https://github.com
