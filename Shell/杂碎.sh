@@ -54,6 +54,53 @@ with open(path, 'rw') as cfg:
     LOG.info("new cfg_json:%s" % cfg_json)
     cfg.write(json.dumps(cfg_json))
 
+#读取配置，有时候是字符串形式的，但不方便处理，可以eval转化成字典来操作，这样就不用管那么多转义字符
+{
+import ConfigParser
+import json
+
+def change_key_cfg(path='server.conf.bak'):
+    LOG.info("change_key_cfg start")
+    with open(path, 'r+') as cfg:
+        parser = ConfigParser.ConfigParser()
+        parser.readfd(cfg)
+        content = parser.get("DEFAULT", "wrap_list")
+        LOG.info("old content:%s " % content)
+        if content:
+            wraps = json.loads(content)["wraps"]
+            LOG.info("old wraps:%s" % wraps)
+            wraps["auth"][0]["wrap"] = \
+                wraps["crypt"][0]["wrap"]
+            LOG.info("new wraps:%s " % wraps)
+            parser.set("DEFAULT", "wrap_list", json.dumps(wraps))
+            content = parser.get("DEFAULT", "wrap_list")
+            LOG.info("new content:%s" % content)
+            parser.write(cfg)
+        else:
+            raise Exception("config %s analyze error!" % path)
+    LOG.info("change_key_cfg end")
+
+# 改变配置文件中的秘钥
+def change_key_cfg(path):
+    LOG.info("change_key_cfg start")
+    with open(path, 'r+') as cfg:
+        parser = ConfigParser.ConfigParser()
+        parser.readfp(cfg)
+        wrap_list_str = parser.get("DEFAULT", "wrap_list")
+        LOG.info("old wrap_list:%s " % wrap_list_str)
+        wrap_list_dict = eval(wrap_list_str)
+        if wrap_list_dict:
+            wrap_list_dict["wraps"]["auth"][0]["wrap"] = \
+                wrap_list_dict["wraps"]["crypt"][0]["wrap"]
+            parser.set("DEFAULT", "wrap_list", json.dumps(wrap_list_dict))
+            parser.write(open(path, "w"))
+            wrap_list_str = parser.get("DEFAULT", "wrap_list")
+            LOG.info("new wrap_list:%s" % wrap_list_str)
+        else:
+            raise Exception("config %s analyze error!" % path)
+    LOG.info("change_key_cfg end")
+ }
+
 #总结         
 json.dumps : dict转成str
 json.dump  : 将python数据保存成json
@@ -82,3 +129,64 @@ f.tell() ：  返回当前光标位置
 f.seek(offset,whence=0)：将光标位置移至所需位置。offset为偏移量。whence定义开始偏移的位置。0为从文件开头偏移。1为从当前位置开始偏移。2为从文件末尾开始偏移，默认为0。注意，此处偏移量是按字节计算，也就是一个汉字最少需要两个偏移量。如果偏移量正好讲一个汉字分开，则会报错。
 f.truncate(数值)   从光标位置截断/删除后面内容。
 f.flush()  将内存内容立即写入硬盘
+
+
+实例1：
+命令：每隔一秒高亮显示网络链接数的变化情况
+watch -n 1 -d netstat -ant
+说明：
+其它操作：
+切换终端： Ctrl+x
+退出watch：Ctrl+g
+实例2：每隔一秒高亮显示http链接数的变化情况
+命令：
+watch -n 1 -d 'pstree|grep http'
+说明：
+每隔一秒高亮显示http链接数的变化情况。 后面接的命令若带有管道符，需要加''将命令区域归整。
+实例3：实时查看模拟攻击客户机建立起来的连接数
+命令：
+watch 'netstat -an | grep:21 | \ grep<模拟攻击客户机的IP>| wc -l' 
+说明：
+实例4：监测当前目录中 scf 的文件的变化
+命令：
+watch -d 'ls -l|grep scf' 
+实例5：10秒一次输出系统的平均负载
+命令：
+watch -n 10 'cat /proc/loadavg'
+watch -n 1 'ps -ef| grep heartBeat | grep gauss | grep -v watch' 
+
+
+#python 进程调用查看
+hostname:~ # pidstat -p 4213 -t 1
+Linux 3.10.0-514.35.4.1_47.x86_64 (0EAD26BC-AA18-7143-853A-8E0EA58B3DAB) 	02/05/2018 	_x86_64_	(16 CPU)
+
+05:26:31 PM   UID      TGID       TID    %usr %system  %guest    %CPU   CPU  Command
+05:26:32 PM  1000      4213         -    0.00    0.00    0.00    0.00    13  python2.7
+05:26:32 PM  1000         -      4213    0.00    0.00    0.00    0.00    13  |__python2.7
+05:26:32 PM  1000         -      4332    0.00    0.00    0.00    0.00     2  |__python2.7
+05:26:32 PM  1000         -      1852    0.00    0.00    0.00    0.00     8  |__python2.7
+
+
+hostname:~ # pstree -p 4213
+python2.7(4213)─┬─{python2.7}(4332)
+                └─{python2.7}(1852)
+                
+#命令   作用
+iostat  磁盘IO监控
+vmstat  虚拟内存监控
+prstat  进程监控
+mpstat  CPU监控
+netstat 网络状态监控
+sar     全面监控
+pidstat 监控进程与资源
+pstree  进程监控
+
+因为HTTPS是加密连接，无法被审计。此时公司Proxy代理会进行HTTPS中间人攻击（Man-in-the-middle-attack），将对方的证书替换成公司IT签发的证书，以确保所有流量可以被解密审计。我们平时试用的Windows都已经预置了公司的“根证书”，所以不会遇到上面的错误。但是Linux机器都是自己装的系统，没有公司“根证书”，这导致了诸多不便。
+
+yum install ca-certificates
+update-ca-trust force-enable
+cp hw.ca /etc/pki/ca-trust/source/anchors/
+update-ca-trust extract
+export http_proxy=http://aa:bb%40123456@proxy.XXXX.com:8080/
+export https_proxy=http://aa:bb%40123456@proxy.XXXX.com:8080/
+curl -I https://github.com
