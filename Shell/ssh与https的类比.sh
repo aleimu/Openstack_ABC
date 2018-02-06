@@ -33,3 +33,5 @@ SSH是通过对数据进行加密后进行传输来保证数据安全的。但�
 
 HTTP --->telent
 HTTPS -->ssh #但中间账号密码的校验替换成了CA证书的校验，这个需要专业机构签发
+#参考博客
+http://www.cnblogs.com/yyds/p/6992125.html
