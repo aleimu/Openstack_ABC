@@ -135,5 +135,37 @@ if __name__ == '__main__':
     lookup(tree)
     deep(tree)
 
+单例模式--线程安全的和不安全的，真的有区别吗？python中实现单例模式时是否真的需要加锁？
 
+import threading
 
+class Singleton_no_lock(object):
+    INSTANCE = None
+    print("id1:", id(INSTANCE))
+    def __new__(cls):
+        if cls.INSTANCE is None:
+            cls.INSTANCE = super(Singleton_no_lock, cls).__new__(cls)
+            print("id2:",id(cls.INSTANCE))
+        return cls.INSTANCE
+
+class Singleton_with_lock(object):
+    INSTANCE = None
+    lock = threading.RLock()
+    def __new__(cls):
+        cls.lock.acquire()
+        if cls.INSTANCE is None:
+            cls.INSTANCE = super(Singleton_with_lock, cls).__new__(cls)
+            print("id:", id(cls.INSTANCE))
+        cls.lock.release()
+        return cls.INSTANCE
+
+def run_thread():
+    print("ID:",id(Singleton_with_lock()))
+
+t_objs = []
+for x in range(100):
+    t=threading.Thread(target=run_thread)
+    t.start()
+    t_objs.append(t)
+for t in t_objs:
+    t.join()
