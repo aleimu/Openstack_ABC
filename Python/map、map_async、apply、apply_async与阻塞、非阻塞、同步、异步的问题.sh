@@ -176,3 +176,328 @@ print('-----apply*-------')
 apply_test()
 apply_async_test()
 print('-----end!-------')
+
+
+#map_async与apply_async在调用上的区别
+import time,random
+import queue,threading
+from multiprocessing.pool import ThreadPool
+
+q = queue.Queue()
+t1=time.time()
+#生产者
+def Producer(name):
+    while True:
+        count = random.randrange(300)
+        #time.sleep(random.randrange(2))
+        #time.sleep(2)
+        q.put(count)
+        if q.qsize() < 10:
+            print("Producer %s has produced %s baozi.." %(name,count))
+        if q.qsize() >= 50:
+            print("NOW q size:", q.qsize())
+            break
+
+#消费者
+def Consumer(name):
+    while True:
+        #time.sleep(random.randrange(5))
+        time.sleep(1)
+        if not q.empty():
+            data = q.get()
+            print('Consumer %s has eat %s baozi*****' % (name,data))
+            if post_data(data):
+                continue
+            else:
+                write_local_cachefile(data)
+        else:
+            print("---no baozi anymore----")
+            return
+
+# 模拟post后服务端返回500/200等情况
+def post_data(data):
+    #time.sleep(random.randrange(5))
+    if data <= 50:
+        return False
+    else:
+        return True
+
+def write_local_cachefile(data):
+    time.sleep(0.2)
+    print("write_local_cachefile: ", data)
+
+#一个线程生产数据
+p1 = threading.Thread(target=Producer,args=('A',))
+# c1 = threading.Thread(target=Consumer,args=('B',))
+# c2 = threading.Thread(target=Consumer,args=('C',))
+p1.start()
+# c1.start()
+# c2.start()
+
+def apply_async():
+    #threadpool获取queue中的数据
+    pool = ThreadPool(10)
+    results = []
+    # range的作用是将任务切成块，作为单独的任务提交给线程池
+    for x in range(25): # 这个range是不可缺少的，ThreadPool(10)定义了池子的大小为10，这里range(25)表示总共起25个线程
+        one_thread = pool.apply_async(func=Consumer,args=(x,))
+        results.append(one_thread)
+    pool.close()
+    pool.join()
+    for i in results:
+        i.wait()
+
+    for i in results:
+        if i.ready():
+            if i.successful():
+                print(i.get())
+
+apply_async()
+
+#运行结果如下
+"""
+.PyCharmCE2017.2/config/scratches/scratch_43.py
+Producer A has produced 90 baozi..
+Producer A has produced 280 baozi..
+Producer A has produced 178 baozi..
+Producer A has produced 166 baozi..
+Producer A has produced 246 baozi..
+Producer A has produced 9 baozi..
+Producer A has produced 208 baozi..
+Producer A has produced 243 baozi..
+Producer A has produced 135 baozi..
+NOW q size: 50
+Consumer 8 has eat 90 baozi*****
+Consumer 4 has eat 280 baozi*****
+Consumer 0 has eat 178 baozi*****
+Consumer 9 has eat 166 baozi*****
+Consumer 3 has eat 246 baozi*****
+Consumer 7 has eat 9 baozi*****
+Consumer 5 has eat 208 baozi*****
+Consumer 6 has eat 243 baozi*****
+Consumer 2 has eat 135 baozi*****
+Consumer 1 has eat 74 baozi*****
+write_local_cachefile:  9
+Consumer 6 has eat 22 baozi*****
+Consumer 8 has eat 223 baozi*****
+Consumer 4 has eat 234 baozi*****
+Consumer 9 has eat 263 baozi*****
+Consumer 2 has eat 231 baozi*****
+Consumer 5 has eat 152 baozi*****
+Consumer 3 has eat 118 baozi*****
+Consumer 1 has eat 275 baozi*****
+Consumer 0 has eat 64 baozi*****
+Consumer 7 has eat 98 baozi*****
+write_local_cachefile:  22
+Consumer 3 has eat 31 baozi*****
+Consumer 8 has eat 166 baozi*****
+Consumer 4 has eat 71 baozi*****
+Consumer 5 has eat 153 baozi*****
+Consumer 0 has eat 31 baozi*****
+Consumer 9 has eat 137 baozi*****
+Consumer 2 has eat 101 baozi*****
+Consumer 1 has eat 168 baozi*****
+Consumer 6 has eat 168 baozi*****
+write_local_cachefile:  31
+write_local_cachefile:  31
+Consumer 7 has eat 262 baozi*****
+Consumer 4 has eat 109 baozi*****
+Consumer 8 has eat 14 baozi*****
+Consumer 2 has eat 44 baozi*****
+Consumer 1 has eat 244 baozi*****
+Consumer 5 has eat 99 baozi*****
+Consumer 9 has eat 239 baozi*****
+Consumer 0 has eat 143 baozi*****
+Consumer 7 has eat 107 baozi*****
+Consumer 3 has eat 277 baozi*****
+write_local_cachefile:  14
+Consumer 6 has eat 191 baozi*****
+write_local_cachefile:  44
+Consumer 4 has eat 61 baozi*****
+Consumer 1 has eat 281 baozi*****
+Consumer 5 has eat 290 baozi*****
+Consumer 9 has eat 176 baozi*****
+Consumer 8 has eat 14 baozi*****
+Consumer 0 has eat 79 baozi*****
+Consumer 6 has eat 146 baozi*****
+Consumer 2 has eat 55 baozi*****
+Consumer 7 has eat 55 baozi*****
+Consumer 3 has eat 167 baozi*****
+write_local_cachefile:  14
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+None
+this is end:  8.3782639503479
+
+程序完成后退出代码0
+
+"""
+
+def map_async():
+    pool = ThreadPool(10)
+    return_list=pool.map_async(func=Consumer,iterable=range(25))
+    #iterable的作用是将任务切成块，作为单独的任务提交给线程池
+    pool.close()
+    pool.join()
+    print(return_list.get())
+
+
+map_async()
+
+#运行结果如下
+"""
+PyCharmCE2017.2/config/scratches/scratch_43.py
+Producer A has produced 40 baozi..
+Producer A has produced 150 baozi..
+Producer A has produced 110 baozi..
+Producer A has produced 274 baozi..
+Producer A has produced 118 baozi..
+Producer A has produced 224 baozi..
+Producer A has produced 85 baozi..
+Producer A has produced 169 baozi..
+Producer A has produced 281 baozi..
+NOW q size: 50
+Consumer 5 has eat 40 baozi*****
+Consumer 4 has eat 150 baozi*****
+Consumer 3 has eat 110 baozi*****
+Consumer 7 has eat 274 baozi*****
+Consumer 6 has eat 118 baozi*****
+Consumer 0 has eat 224 baozi*****
+Consumer 2 has eat 85 baozi*****
+Consumer 1 has eat 169 baozi*****
+Consumer 8 has eat 281 baozi*****
+Consumer 9 has eat 36 baozi*****
+write_local_cachefile:  36
+write_local_cachefile:  40
+Consumer 1 has eat 283 baozi*****
+Consumer 0 has eat 210 baozi*****
+Consumer 8 has eat 106 baozi*****
+Consumer 2 has eat 93 baozi*****
+Consumer 4 has eat 263 baozi*****
+Consumer 3 has eat 60 baozi*****
+Consumer 6 has eat 206 baozi*****
+Consumer 7 has eat 296 baozi*****
+Consumer 9 has eat 99 baozi*****
+Consumer 5 has eat 255 baozi*****
+Consumer 2 has eat 39 baozi*****
+Consumer 4 has eat 46 baozi*****
+Consumer 8 has eat 8 baozi*****
+Consumer 3 has eat 5 baozi*****
+Consumer 0 has eat 153 baozi*****
+Consumer 1 has eat 92 baozi*****
+Consumer 6 has eat 261 baozi*****
+Consumer 7 has eat 240 baozi*****
+write_local_cachefile:  46
+write_local_cachefile:  8
+write_local_cachefile:  5
+write_local_cachefile:  39
+Consumer 9 has eat 282 baozi*****
+Consumer 5 has eat 81 baozi*****
+Consumer 6 has eat 69 baozi*****
+Consumer 7 has eat 261 baozi*****
+Consumer 0 has eat 32 baozi*****
+Consumer 1 has eat 271 baozi*****
+Consumer 4 has eat 3 baozi*****
+Consumer 8 has eat 240 baozi*****
+Consumer 2 has eat 272 baozi*****
+write_local_cachefile:  32
+Consumer 5 has eat 21 baozi*****
+Consumer 9 has eat 244 baozi*****
+Consumer 3 has eat 173 baozi*****
+write_local_cachefile:  3
+write_local_cachefile:  21
+Consumer 1 has eat 130 baozi*****
+Consumer 6 has eat 162 baozi*****
+Consumer 7 has eat 227 baozi*****
+Consumer 0 has eat 109 baozi*****
+Consumer 3 has eat 43 baozi*****
+Consumer 8 has eat 4 baozi*****
+Consumer 2 has eat 174 baozi*****
+Consumer 9 has eat 86 baozi*****
+Consumer 5 has eat 109 baozi*****
+write_local_cachefile:  4
+Consumer 4 has eat 281 baozi*****
+write_local_cachefile:  43
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+---no baozi anymore----
+[None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
+this is end:  8.242525577545166
+
+程序完成后退出代码0
+
+"""
+
+t2=time.time()
+print("this is end: ",t2-t1)
+
+
