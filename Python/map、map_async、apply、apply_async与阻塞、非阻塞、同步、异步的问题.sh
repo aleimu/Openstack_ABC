@@ -178,7 +178,12 @@ apply_async_test()
 print('-----end!-------')
 
 
+
+
 #map_async与apply_async在调用上的区别
+#!/usr/bin/python
+# -*- coding:UTF-8 -*-
+
 import time,random
 import queue,threading
 from multiprocessing.pool import ThreadPool
@@ -239,7 +244,9 @@ def apply_async():
     pool = ThreadPool(10)
     results = []
     # range的作用是将任务切成块，作为单独的任务提交给线程池
-    for x in range(25): # 这个range是不可缺少的，ThreadPool(10)定义了池子的大小为10，这里range(25)表示总共起25个线程
+    for x in range(25): # 这个range是不可缺少的，ThreadPool(10)定义了池子的大小为10，
+        # 这里range(25)表示总共起25个线程，25个线程去抢10个池子中的空余池，这里不能设置太小，
+        # 如果range(1)那就是一个线程用10个池子(效果等于没用线程池)
         one_thread = pool.apply_async(func=Consumer,args=(x,))
         results.append(one_thread)
     pool.close()
@@ -383,7 +390,8 @@ this is end:  8.3782639503479
 def map_async():
     pool = ThreadPool(10)
     return_list=pool.map_async(func=Consumer,iterable=range(25))
-    #iterable的作用是将任务切成块，作为单独的任务提交给线程池
+    #iterable的作用是将任务切成块，作为单独的任务提交给线程池，25个线程去抢10个池子中的空余池，
+    # 这里不能设置太小，如果range(1)那就是1个线程用10个池子(效果等于没用线程池)
     pool.close()
     pool.join()
     print(return_list.get())
@@ -499,5 +507,6 @@ this is end:  8.242525577545166
 
 t2=time.time()
 print("this is end: ",t2-t1)
+
 
 
