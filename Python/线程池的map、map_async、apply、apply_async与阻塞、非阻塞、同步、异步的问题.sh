@@ -233,11 +233,41 @@ def write_local_cachefile(data):
 
 #一个线程生产数据
 p1 = threading.Thread(target=Producer,args=('A',))
-# c1 = threading.Thread(target=Consumer,args=('B',))
-# c2 = threading.Thread(target=Consumer,args=('C',))
 p1.start()
-# c1.start()
-# c2.start()
+
+def threading_10():
+    c1 = threading.Thread(target=Consumer,args=('B',))
+    c2 = threading.Thread(target=Consumer,args=('C',))
+    c3 = threading.Thread(target=Consumer,args=('D',))
+    c4 = threading.Thread(target=Consumer,args=('E',))
+    c5 = threading.Thread(target=Consumer,args=('F',))
+    c6 = threading.Thread(target=Consumer,args=('G',))
+    c7 = threading.Thread(target=Consumer,args=('H',))
+    c8 = threading.Thread(target=Consumer,args=('I',))
+    c9 = threading.Thread(target=Consumer,args=('J',))
+    c10 = threading.Thread(target=Consumer,args=('K',))
+    c1.start()
+    c2.start()
+    c3.start()
+    c4.start()
+    c5.start()
+    c6.start()
+    c7.start()
+    c8.start()
+    c9.start()
+    c10.start()
+    c1.join()
+    c2.join()
+    c3.join()
+    c4.join()
+    c5.join()
+    c6.join()
+    c7.join()
+    c8.join()
+    c9.join()
+    c10.join()
+
+#threading_10() #这样所用的时间和下面两种线程池10线程池、10线程时基本一样
 
 def apply_async():
     #threadpool获取queue中的数据
