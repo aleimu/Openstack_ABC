@@ -1,4 +1,5 @@
 #参考博客
+http://cn.python-requests.org/zh_CN/latest/user/advanced.html#keep-alive
 http://blog.csdn.net/toontong/article/details/25730829
 https://stackoverflow.com/questions/25239650/python-requests-speed-up-using-keep-alive
 http://xiaorui.cc/2017/04/03/%E6%9E%84%E5%BB%BA%E9%AB%98%E6%95%88%E7%9A%84python-requests%E9%95%BF%E8%BF%9E%E6%8E%A5%E6%B1%A0/
@@ -36,6 +37,22 @@ requests.get('http://www.qq.com')
 >>DEBUG:requests.packages.urllib3.connectionpool:"GET / HTTP/1.1" 200 None
 >>INFO:requests.packages.urllib3.connectionpool:Starting new HTTP connection (1): www.qq.com
 >>DEBUG:requests.packages.urllib3.connectionpool:"GET / HTTP/1.1" 200 None
+
+
+#流式上传
+Requests支持流式上传，这允许你发送大的数据流或文件而无需先把它们读入内存。要使用流式上传，仅需为你的请求体提供一个类文件对象即可:
+读取文件请使用字节的方式，这样Requests会生成正确的Content-Length
+with open('massive-body', 'rb') as f:
+    requests.post('http://some.url/streamed', data=f)
+
+#分块传输编码
+对于出去和进来的请求，Requests也支持分块传输编码。要发送一个块编码的请求，仅需为你的请求体提供一个生成器
+注意生成器输出应该为bytes
+def gen():
+    yield b'hi'
+    yield b'there'
+
+requests.post('http://some.url/chunked', data=gen())
 
 
 #持久连接keep-alive
