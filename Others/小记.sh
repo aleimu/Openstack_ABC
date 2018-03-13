@@ -1093,6 +1093,34 @@ show create procedure zyd_name 显示一个存储过程详细信息。
 
 }
 
+定位问题的思路
+{
+1、打开邮件，查看html错误，大致预览一下
+2、点击链接找到具体的执行机ip并登入
+3、查看源tempest日志 vim /home/fi-tempest-plugin/log/tempest.log ，找到最早出现的错误，并关注错误的打印出的原因
+4、登录出错的节点，查看对应组件的日志和control日志，以mongodb为例：
+vim /var/log/fusionsphere/component/mongodb/mongodb.log
+vim /var/log/fusionsphere/component/mongodbControl/mongodbControl.log
+5、对比tempest日志和组件日志出错的时间点，找到最初导致错误的操作，一般由tempest用例中的某部分操作导致
+6、若组件已正常，尝试单个重跑此出错的tempest用例，若重跑成功，再把这个用例的前一个用例和次用例一起重跑一遍，排除用例之间相互影响的可能，若是前一个用例导致的错误，修改对应用例
+若重跑失败，则找到对应出错的步骤，一步一步排除，并tailf /var/log/fusionsphere/component/mongodb/mongodb.log 查看错误原因和触发错误的脚本，可以find / -name '脚本名.py' 找到脚本再找到出错的具体行（echo -e 'syntax on\nset nu!' >> ~/.vimrc 可以把vim设置成默认显示行）。
+7、查看出错行的上下文，走读代码，了解大意，并和对应组件的开发人沟通一下。
+8、自己能搞得定，就可以发邮件回复错误了，搞不定就让对应组件的开发人深入定位。
+
+
+问题已定位，具体过程如下：
+1、观察到3.9/3.10/3.11/3.12/3.13连续几天通过PasswordManager修改mongodb密码后，mongodb就会出现异常
+2、观察info-collect-server修改密码部分的日志和mongodb的日志，对比时间点，重合度很高，基本为同时出现的异常，怀疑是PasswordManager中某个流程导致mongodb重启然后修改密码失败
+3、修改密码失败后，现象是配置文件的密码已经改变，但mongodb数据库中的密码并没有变
+4、开启多个日志的DEBUG，追踪restapi过程，PasswordManager调用 https://172.28.8.130:8000/cps/v1/services/ceilometer/componenttemplates/ceilometer-api/params, method:POST 给cps-server，然后cps-server
+再将两个任务下发下去，一个是修改配置文件（2018-03-13T14:01:58.603+08:00 localhost cps-client WARNING [type:run] [pid:6953] [status_check_heartbeat] [status_mgr.py:585 __check_component_status_heartbeat] srv_template:mongodb.mongodb status_old:cfg_changing no need to CS
+），一个是下发启动mongodb（2018-03-13T11:38:09.190+08:00 localhost cps-client WARNING [type:run] [pid:3762] [Task-mongodb] [componentmgr.py:884 __after_task_process] mongodb.mongodb start fail.
+），再查看下发任务队列（curl http://127.0.0.1:7777/cps-client/v1/component/task）发现很多任务都下发失败，由此可知，是cps这边任务下发有问题，是由近期合入代码导致，已修改。
+5、一般遇到大范围的异常出现，应该首先询问相关组有没有近期合入代码，再追踪日志中相关组件之间的消息的转发。
+
+#熟悉组件特性在定位问题中是关键能力
+
+}
 
 
 
