@@ -784,6 +784,8 @@ collections 模块在熟悉一下，常用数据结构，树
     6.保证表单数据不超过200w，适时分割表
     　　针对查询较慢的语句，可以使用explain来分析该语句具体的执行情况   
 
+}
+
 SQL常用命令：
 CREATE TABLE Student( 
 ID NUMBER PRIMARY KEY, 
@@ -802,10 +804,14 @@ REVOKE (权限表) ON(对象) FROM USER_NAME [WITH REVOKE OPTION] //撤权
 Select E.NAME, S.NAME FROM EMPLOYEE E S 
 WHERE E.SUPERName=S.Name
 
+show create table Student; #查看建表语句
+desc Student; #查看表结构
+
 内联接,外联接区别？ 
 内连接是保证两个表中所有的行都要满足连接条件，而外连接则不然。 
 在外连接中，某些不满条件的列也会显示出来，也就是说，只限制其中一个表的行，而不限制另一个表的行。分左连接、右连接、全连接三种
-}
+
+
 http://www.cnblogs.com/wangqiaomei/p/5682669.html
 https://www.cnblogs.com/huchong/p/8491107.html
 
@@ -1086,6 +1092,15 @@ show create procedure zyd_name 显示一个存储过程详细信息。
 
 
 
+http://blog.csdn.net/v_JULY_v/article/details/6530142/
+#B树、B+树、B*树
+动态查找树主要有：二叉查找树（Binary Search Tree），平衡二叉查找树（Balanced Binary Search Tree），红黑树(Red-Black Tree )，B-tree/B+-tree/ B*-tree (B~Tree)。前三者是典型的二叉查找树结构，其查找的时间复杂度O(log2N)与树的深度相关，那么降低树的深度自然会提高查找效率。
+
+二叉查找树结构由于树的深度过大而造成磁盘I/O读写过于频繁，进而导致查询效率低下
+B树的各种操作能使B树保持较低的高度，从而达到有效避免磁盘过于频繁的查找存取操作，从而有效提高查找效率
+B-tree（B-tree树即B树，B即Balanced，平衡的意思）
+
+B 树是为了磁盘或其它存储设备而设计的一种多叉（相对于二叉，B树每个内结点有多个分支，即多叉）平衡查找树。
 
 
 
@@ -1093,39 +1108,199 @@ show create procedure zyd_name 显示一个存储过程详细信息。
 
 }
 
-定位问题的思路
-{
-1、打开邮件，查看html错误，大致预览一下
-2、点击链接找到具体的执行机ip并登入
-3、查看源tempest日志 vim /home/fi-tempest-plugin/log/tempest.log ，找到最早出现的错误，并关注错误的打印出的原因
-4、登录出错的节点，查看对应组件的日志和control日志，以mongodb为例：
-vim /var/log/fusionsphere/component/mongodb/mongodb.log
-vim /var/log/fusionsphere/component/mongodbControl/mongodbControl.log
-5、对比tempest日志和组件日志出错的时间点，找到最初导致错误的操作，一般由tempest用例中的某部分操作导致
-6、若组件已正常，尝试单个重跑此出错的tempest用例，若重跑成功，再把这个用例的前一个用例和次用例一起重跑一遍，排除用例之间相互影响的可能，若是前一个用例导致的错误，修改对应用例
-若重跑失败，则找到对应出错的步骤，一步一步排除，并tailf /var/log/fusionsphere/component/mongodb/mongodb.log 查看错误原因和触发错误的脚本，可以find / -name '脚本名.py' 找到脚本再找到出错的具体行（echo -e 'syntax on\nset nu!' >> ~/.vimrc 可以把vim设置成默认显示行）。
-7、查看出错行的上下文，走读代码，了解大意，并和对应组件的开发人沟通一下。
-8、自己能搞得定，就可以发邮件回复错误了，搞不定就让对应组件的开发人深入定位。
+
+#使用 .vimrc 文件，创建新文件时能够快速的生成开头的注释信息
+cat  ~/.vimrc 
+
+autocmd BufNewFile *.py,*.cc,*.sh,*.java exec ":call SetTitle()"
+func SetTitle()
+    if expand("%:e") == 'sh'
+        call setline(1,"#!/bin/bash")
+        call setline(2, "##############################################################")
+        call setline(3, "# File Name: ".expand("%"))
+        call setline(4, "# Version: V1.0")
+        call setline(5, "# Author: clsn")
+        call setline(6, "# Organization: http://www.cnblogs.com/clsn/p/7992981.html")
+        call setline(7, "# Created Time : ".strftime("%F %T"))
+        call setline(8, "# Description:")
+        call setline(9, "##############################################################")
+        call setline(10, "")
+    endif
+endfunc
+
+# http://www.cnblogs.com/wfwenchao/p/6139039.html  Linux set、env、declare、export显示shell变量的区别
+env/declare/set/export -p 命令查看系统中的环境变量
+
+env 这是一个工具，或者说一个Linux命令，显示用户的环境变量。
+set 显示用户的局部变量和用户环境变量。
+export 显示导出成用户变量的shell局部变量，并显示变量的属性；就是显示由局部变量导出成环境变量的那些变量 （比如可以 export WWC导出一个环境变量，也可通过 declare -X LCY导出一个环境变量）
+declare 跟set一样，显示用户的shell变量 （局部变量和环境变量）
+
+local 一般用于局部变量声明，多在在函数内部使用。
+export:将自定义变量设定为系统环境变量（仅限于该次登陆操作，当前shell中有效）
 
 
-问题已定位，具体过程如下：
-1、观察到3.9/3.10/3.11/3.12/3.13连续几天通过PasswordManager修改mongodb密码后，mongodb就会出现异常
-2、观察info-collect-server修改密码部分的日志和mongodb的日志，对比时间点，重合度很高，基本为同时出现的异常，怀疑是PasswordManager中某个流程导致mongodb重启然后修改密码失败
-3、修改密码失败后，现象是配置文件的密码已经改变，但mongodb数据库中的密码并没有变
-4、开启多个日志的DEBUG，追踪restapi过程，PasswordManager调用 https://172.28.8.130:8000/cps/v1/services/ceilometer/componenttemplates/ceilometer-api/params, method:POST 给cps-server，然后cps-server
-再将两个任务下发下去，一个是修改配置文件（2018-03-13T14:01:58.603+08:00 localhost cps-client WARNING [type:run] [pid:6953] [status_check_heartbeat] [status_mgr.py:585 __check_component_status_heartbeat] srv_template:mongodb.mongodb status_old:cfg_changing no need to CS
-），一个是下发启动mongodb（2018-03-13T11:38:09.190+08:00 localhost cps-client WARNING [type:run] [pid:3762] [Task-mongodb] [componentmgr.py:884 __after_task_process] mongodb.mongodb start fail.
-），再查看下发任务队列（curl http://127.0.0.1:7777/cps-client/v1/component/task）发现很多任务都下发失败，由此可知，是cps这边任务下发有问题，是由近期合入代码导致，已修改。
-5、一般遇到大范围的异常出现，应该首先询问相关组有没有近期合入代码，再追踪日志中相关组件之间的消息的转发。
 
-#熟悉组件特性在定位问题中是关键能力
+使用${} 打印变量的时候防止出现歧义的问题
+[root@clsn scripts]# time=`date`
+[root@clsn scripts]# echo $time_day
 
-}
+[root@clsn scripts]# echo ${time}_day
+2017年 12月 05日 星期二 09:02:06 CST_day
+[root@clsn scripts]# echo $time-day
+2017年 12月 05日 星期二 09:02:06 CST-day
 
 
+# 字符串比较是放置在[...]中，有以下的几种：
+str1 = str2，字符串1匹配字符串2
+str1 != str2，字符串1不匹配字符串2
+str1 > str2，字符串1大于字符串2
+str1 < str2，字符串1小于字符串2
+-n str，字符串不为null，长度大于零
+-z str，字符串为null，长度为零
+
+# >或者<或者=是用于字符串的比较，如果用于整数比较，使用：
+-lt，小于
+-le，小于等于
+-eq，等于
+-ge，大于等于
+-gt，大于
+-ne，不等于
+
+#整数比较的三种方式
+[root@allinone-centos .pip]# if [[ 11 < 111 ]]; then echo "a"; else echo 'b'; fi
+a
+[root@allinone-centos .pip]# if [[ 11 > 111 ]]; then echo "a"; else echo 'b'; fi
+b
+[root@allinone-centos .pip]# if (( 11 < 111 )); then echo "a"; else echo 'b'; fi
+a
+[root@allinone-centos .pip]# if (( 11 > 111 )); then echo "a"; else echo 'b'; fi
+b
+[root@allinone-centos .pip]# if [ 11 -lt 111 ]; then echo "a"; else echo 'b'; fi
+a
+[root@allinone-centos .pip]# if [ 11 -gt 111 ]; then echo "a"; else echo 'b'; fi
+b
+
+# 在[]结构中"<"需要被转义
+[root@allinone-centos .pip]# if [ 1 \> 2 ]; then echo "a"; else echo 'b'; fi
+b
+[root@allinone-centos .pip]# if [ 1 \< 2 ]; then echo "a"; else echo 'b'; fi
+a
+
+
+#整数加上引号也是可以比较数值大小的
+[root@allinone-centos .pip]# if [ '11' -gt '111' ]; then echo "a"; else echo 'b'; fi
+b
+[root@allinone-centos .pip]# if [ '11' -lt '111' ]; then echo "a"; else echo 'b'; fi
+a
+[root@allinone-centos .pip]# if [ '11' -lt '11' ]; then echo "a"; else echo 'b'; fi
+b
+[root@allinone-centos .pip]# if [ '11' -lt '1' ]; then echo "a"; else echo 'b'; fi
+b
+[root@allinone-centos .pip]# if [ '11' -lt '111' ]; then echo "a"; else echo 'b'; fi
+a
+[root@allinone-centos .pip]# if [ '11' -lt '22' ]; then echo "a"; else echo 'b'; fi
+a
+[root@allinone-centos .pip]# if [ '11' -lt '10' ]; then echo "a"; else echo 'b'; fi
+b
+
+[root@allinone-centos .pip]# if [[ '11' > '10' ]]; then echo "a"; else echo 'b'; fi
+a
+[root@allinone-centos .pip]# if [[ '11' < '10' ]]; then echo "a"; else echo 'b'; fi
+b
+
+# == 等于,如:if [ "$a" == "$b" ],与=等价，但在[[]]和[]中的行为是不同的,如下:
+[[ $a == z* ]]   # 如果$a以"z"开头(模式匹配)那么将为true   
+[[ $a == "z*" ]] # 如果$a等于z*(字符匹配),那么结果为true   
+[ $a == z* ]     # File globbing 和word splitting将会发生   
+[ "$a" == "z*" ] # 如果$a等于z*(字符匹配),那么结果为true   
+
+
+[root@allinone-centos .pip]# if [ 'aa' = b* ]; then echo "a"; else echo 'b'; fi
+b
+[root@allinone-centos .pip]# if [ 'aa' == b* ]; then echo "a"; else echo 'b'; fi
+b
+[root@allinone-centos .pip]# if [[ 'aa' == a* ]]; then echo "a"; else echo 'b'; fi
+a
+[root@allinone-centos .pip]# if [ 'aa' == a* ]; then echo "a"; else echo 'b'; fi
+b
+[root@allinone-centos .pip]# if [ 'aa' = a* ]; then echo "a"; else echo 'b'; fi
+b
 
 
 
+#linux中产生随机数的方法
+echo $RANDOM 
+
+#彩色字体
+echo -e "\033[30m 黑色字 clsn \033[0m"
+echo -e "\033[31m 红色字 clsn \033[0m"
+echo -e "\033[32m 绿色字 clsn \033[0m"
+echo -e "\033[33m 黄色字 clsn \033[0m"
+echo -e "\033[34m 蓝色字 clsn \033[0m"
+echo -e "\033[35m 紫色字 clsn \033[0m"
+echo -e "\033[36m 天蓝字 clsn \033[0m"
+echo -e "\033[37m 白色字 clsn \033[0m"
+# 特效字体
+\033[0m 关闭所有属性
+\033[1m 设置高亮度
+\033[4m 下划线
+\033[5m 闪烁
+\033[7m 反显
+\033[8m 消隐
+\033[30m — \033[37m 设置前景色
+\033[40m — \033[47m 设置背景色
+\033[nA 光标上移 n 行
+\033[nB 光标下移 n 行
+\033[nC 光标右移 n 行
+\033[nD 光标左移 n 行
+\033[y;xH 设置光标位置
+\033[2J 清屏
+\033[K 清除从光标到行尾的内容
+\033[s 保存光标位置
+\033[u 恢复光标位置
+\033[?25l 隐藏光标
+\033[?25h 显示光标
+
+#使用dos2unix 把windows上的脚本转化linux格式
+dos2unix windowe.sh 
+
+
+# for的几种方式
+
+for x in a b c d e f g; do echo $x; done
+for ((i=0;i<=5;i++)); do echo $i; done
+for x in {1..10}; do echo $x; done
+
+
+# 批量创建用户并设置随机密码（不使用shell循环）
+方法一
+echo user{1..20}|xargs -n1|sed -r 's#(.*)#useradd \1 \&\& echo \1 >>/tmp/passwd.txt \&\& echo $RANDOM |md5sum |cut -c 1-5>>/tmp/passwd.txt \&\& echo `tail -1 /tmp/passwd.txt`|passwd --stdin \1#g'|bash
+方法二
+echo user{1..20}|xargs -n1|sed -r 's#(.*)#useradd \1 \&\& pass=`echo $RANDOM |md5sum |cut -c 1-5` \&\& echo $pass |passwd --stdin \1 \&\& echo \1 $pass>>/tmp/user_passwd.txt#g'|bash
+方法三
+echo user{1..20}|xargs -n1|sed -r 's#(.*)#useradd \1 \&\& pass=`echo $RANDOM |md5sum |cut -c 1-5` \&\& echo \1:$pass>>/tmp/user_passwd.txt \&\& chpasswd</tmp/user_passwd.txt#g'|bash
+
+
+# 使用expr 计算字符串长度
+expr length '111'
+
+# 计算1-100的和
+echo `seq -s + 1 100`|bc
+
+
+# 网络基础知识-网络协议
+http://www.cnblogs.com/wj-1314/p/8298025.html
+
+
+
+
+“线程池”旨在减少创建和销毁线程的频率，其维持一定合理数量的线程，并让空闲的线程重新承担新的执行任务。“连接池”维持连接的缓存池，尽量重用已有的连接、减少创建和关闭连接的频率。
+“线程池”和“连接池”技术也只是在一定程度上缓解了频繁调用IO接口带来的资源占用
+# 几个不错的博客
+http://www.cnblogs.com/wj-1314/p/8309118.html
+http://www.cnblogs.com/wj-1314/p/8490822.html
+http://www.cnblogs.com/wj-1314/p/8263328.html
 
 
 
