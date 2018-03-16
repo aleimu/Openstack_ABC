@@ -1303,7 +1303,14 @@ http://www.cnblogs.com/wj-1314/p/8490822.html
 http://www.cnblogs.com/wj-1314/p/8263328.html
 
 
+http://blog.csdn.net/zqixiao_09/article/details/51154368
+二层交换机 基于MAC地址
+三层交换机 具有VLAN功能 有交换和路由///基于IP，就是网络
+四层交换机 基于端口，就是应用
 
+光电转换器的工作原理
+光交换机
+数字中继器
 
 
 
