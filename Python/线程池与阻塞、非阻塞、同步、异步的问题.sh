@@ -1,6 +1,6 @@
 from multiprocessing.dummy import Pool as ThreadPool
 import time
-
+from multiprocessing.pool import ThreadPool
 """
 from multiprocessing import Pool as ProcessPool
 from multiprocessing.dummy import Pool as ThreadPool
@@ -9,7 +9,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 
 python multiprocessing.Pool 中map、map_async、apply、apply_async的区别
 #进程池/线程池有共同的方法
-区别         多参数        并发            阻塞         结果有序   异步
+区别         多参数       并发           阻塞         结果有序  异步
 map          no           yes            yes          yes       no
 apply        yes          no             yes          no        no
 map_async    no           yes            no           yes       yes
@@ -93,9 +93,52 @@ D是个有钱人，干脆雇了一个人帮他钓鱼，一旦那个人把鱼钓�
 （4）异步非阻塞：调用者发出调用之后（如async_recv），线程继续进行别的操作，被调用的读操作由系统（或者库）来进行，等待有结果之后，系统（或者库）通过某种机制（一般为调用调用者设置的回调函数）来通知调用者
 }
 
-IO多路复用的触发方式
-{
 
+#函数
+apply(func[, args[, kwds]]) ：使用arg和kwds参数调用func函数，结果返回前会一直阻塞，由于这个原因，apply_async()更适合并发执行，另外，func函数仅被pool中的一个进程运行。
+apply_async(func[, args[, kwds[, callback[, error_callback]]]]) ： apply()方法的一个变体，会返回一个结果对象。如果callback被指定，那么callback可以接收一个参数然后被调用，当结果准备好回调时会调用callback，调用失败时，则用error_callback替换callback。 Callbacks应被立即完成，否则处理结果的线程会被阻塞。
+close() ： 阻止更多的任务提交到pool，待任务完成后，工作进程会退出。
+terminate() ： 不管任务是否完成，立即停止工作进程。在对pool对象进程垃圾回收的时候，会立即调用terminate()。
+join() : wait工作线程的退出，在调用join()前，必须调用close() or terminate()。这样是因为被终止的进程需要被父进程调用wait（join等价与wait），否则进程会成为僵尸进程。
+"""
+
+
+
+"""
+select 原理
+　　1.从用户空间拷贝fd_set到内核空间（fd_set 过大导致占用空间且慢）；
+　　2.注册回调函数__pollwait；
+　　3.遍历所有fd，对全部指定设备做一次poll（这里的poll是一个文件操作，它有两个参数，一个是文件fd本身，一个是当设备尚未就绪时调用的回调函数__pollwait，这个函数把设备自己特有的等待队列传给内核，让内核把当前的进程挂载到其中）（遍历数组中所有 fd）；
+　　4.当设备就绪时，设备就会唤醒在自己特有等待队列中的【所有】节点，于是当前进程就获取到了完成的信号。poll文件操作返回的是一组标准的掩码，其中的各个位指示当前的不同的就绪状态（全0为没有任何事件触发），根据mask可对fd_set赋值；
+　　5.如果所有设备返回的掩码都没有显示任何的事件触发，就去掉回调函数的函数指针，进入有限时的睡眠状态，再恢复和不断做poll，再作有限时的睡眠，直到其中一个设备有事件触发为止。
+只要有事件触发，系统调用返回，将fd_set从内核空间拷贝到用户空间，回到用户态，用户就可以对相关的fd作进一步的读或者写操作了。
+
+epoll 原理
+　　调用epoll_create时，做了以下事情：
+　　　　内核帮我们在epoll文件系统里建了个file结点；
+　　　　在内核cache里建了个红黑树用于存储以后epoll_ctl传来的socket；
+　　　　建立一个list链表，用于存储准备就绪的事件。
+　　调用epoll_ctl时，做了以下事情：
+　　　　把socket放到epoll文件系统里file对象对应的红黑树上；
+　　　　给内核中断处理程序注册一个回调函数，告诉内核，如果这个句柄的中断到了，就把它放到准备就绪list链表里。
+　　调用epoll_wait时，做了以下事情：
+　　　　观察list链表里有没有数据。有数据就返回，没有数据就sleep，等到timeout时间到后即使链表没数据也返回。而且，通常情况下即使我们要监控百万计的句柄，大多一次也只返回很少量的准备就绪句柄而已，所以，epoll_wait仅需要从内核态copy少量的句柄到用户态而已。
+
+
+
+select有3个缺点：
+1. 每次调用select，都需要把fd集合从用户态拷贝到内核态，这个开销在fd很多时会很大。
+2. 每次调用select后，都需要在内核遍历传递进来的所有fd，这个开销在fd很多时也很大。
+这点从python的例子里看不出来，因为python select api更加友好，直接返回就绪的socket列表。事实上linux内核select api返回的是就绪socket数目：
+int select (int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
+3. fd数量有限，默认1024。
+
+
+管理异步socket，其中3个有对应的Python的API：select、poll和epoll。epoll和pool比select更好，
+因为 Python程序不需要检查每一个socket感兴趣的event。相反，它可以依赖操作系统来告诉它哪些socket可能有这些event。epoll 比pool更好，因为它不要求操作系统每次都去检查python程序需要的所有socket感兴趣的event。而是Linux在event发生的时候会 跟踪到，并在Python需要的时候返回一个列表。因此epoll对于大量（成千上万）并发socket连接，是更有效率和可扩展的机制
+epoll是描述符列表的管理交给内核负责，一旦某种事件发生，内核会把发生事件的描述符列表通知给进程，这样就避免了轮询整个描述符列表
+
+IO多路复用的触发方式:
 在linux的IO多路复用中有水平触发,边缘触发两种模式,这两种模式的区别如下:
 
 水平触发:如果文件描述符已经就绪可以非阻塞的执行IO操作了,此时会触发通知.允许在任意时刻重复检测IO的状态,
@@ -116,16 +159,13 @@ epoll既可以采用水平触发,也可以采用边缘触发.
 有数据可读(描述符就绪)那么水平触发的epoll就立即返回.
 边缘触发:只有电平发生变化(高电平到低电平,或者低电平到高电平)的时候才触发通知.上面提到即使有数据
 可读,但是没有新的IO活动到来,epoll也不会立即返回。
-}
 
-#函数
-apply(func[, args[, kwds]]) ：使用arg和kwds参数调用func函数，结果返回前会一直阻塞，由于这个原因，apply_async()更适合并发执行，另外，func函数仅被pool中的一个进程运行。
+
+当程序跑起来时，一般情况下，应用程序（application program）会时常通过API调用库里所预先备好的函数。但是有些库函数（library function）却要求应用先传给它一个函数，好在合适的时候调用，以完成目标任务。这个被传入的、后又被调用的函数就称为回调函数（callback function）。
 apply_async(func[, args[, kwds[, callback[, error_callback]]]]) ： apply()方法的一个变体，会返回一个结果对象。如果callback被指定，那么callback可以接收一个参数然后被调用，当结果准备好回调时会调用callback，调用失败时，则用error_callback替换callback。 Callbacks应被立即完成，否则处理结果的线程会被阻塞。
-close() ： 阻止更多的任务提交到pool，待任务完成后，工作进程会退出。
-terminate() ： 不管任务是否完成，立即停止工作进程。在对pool对象进程垃圾回收的时候，会立即调用terminate()。
-join() : wait工作线程的退出，在调用join()前，必须调用close() or terminate()。这样是因为被终止的进程需要被父进程调用wait（join等价与wait），否则进程会成为僵尸进程。
-"""
+map_async(func, iterable[, chunksize[, callback[, error_callback]]])
 
+"""
 
 def fun(msg):
     print('msg: ', msg)
