@@ -115,6 +115,22 @@ epoll.register(文件句柄,事件类型) 注册要监控的文件句柄和事�
     epoll.fromfd(fileno) 从1个指定的文件描述符创建1个epoll对象
     epoll.close()   关闭epoll对象的控制文件描述符
 
+EPOLL事件有两种模型 Level Triggered (LT) 和 Edge Triggered (ET)：
+LT(level triggered，水平触发模式)是缺省的工作方式，并且同时支持 block 和 non-block socket。在这种做法中，内核告诉你一个文件描述符是否就绪了，
+然后你可以对这个就绪的fd进行IO操作。如果你不作任何操作，内核还是会继续通知你的，所以，这种模式编程出错误可能性要小一点。
+
+ET(edge-triggered，边缘触发模式)是高速工作方式，只支持no-block socket。在这种模式下，当描述符从未就绪变为就绪时，内核通过epoll告诉你。
+然后它会假设你知道文件描述符已经就绪，并且不会再为那个文件描述符发送更多的就绪通知，等到下次有新的数据进来的时候才会再次出发就绪事件。
+
+events 宏的集合：
+EPOLLIN     //表示对应的文件描述符可以读（包括对端SOCKET正常关闭）；
+EPOLLOUT    //表示对应的文件描述符可以写；
+EPOLLPRI    //表示对应的文件描述符有紧急的数据可读（这里应该表示有带外数据到来）；
+EPOLLERR    //表示对应的文件描述符发生错误；
+EPOLLHUP    //表示对应的文件描述符被挂断；
+EPOLLET     //将EPOLL设为边缘触发(Edge Triggered)模式，这是相对于水平触发(Level Triggered)来说的。
+EPOLLONESHOT//只监听一次事件，当监听完这次事件之后，如果还需要继续监听这个socket的话，需要再次把这个socket加入到EPOLL队列里。
+
 """
 
 #!/usr/bin/env python
