@@ -18,7 +18,7 @@ apply_async  yes          yes            no           no        yes
 进程池的使用有四种方式：apply_async、apply、map_async、map。
 其中apply_async和map_async是异步的，也就是启动进程函数之后会继续执行后续的代码不用等待进程函数返回。
 apply_async和map_async方式提供了一写获取进程函数状态的函数：ready()、successful()、get()。
-PS：join()语句要放在close()语句后面。
+PS：join()语句要放在close()语句后面。 
 
 阻塞与非阻塞，同步与异步的区别
 {
