@@ -190,3 +190,8 @@ update-ca-trust extract
 export http_proxy=http://aa:bb%40123456@proxy.XXXX.com:8080/
 export https_proxy=http://aa:bb%40123456@proxy.XXXX.com:8080/
 curl -I https://github.com
+
+
+单独执行last指令时，它会读取位于/var/log/wtmp的文件，并把该给文件的内容记录的登录系统的用户名单全部显示出来。
+单独执行lastb指令，它会读取位于/var/log/btmp的文件，并把该文件内容记录的登入系统失败的用户名单，全部显示出来。
+
